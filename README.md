@@ -11,7 +11,8 @@ Keeps LLM keys and retry logic in one place so Telegram bots stay thin.
 | GET | `/health` | Liveness |
 | GET | `/ready` | Checks `OPENAI_API_KEY` |
 | GET | `/v1/ping` | Quick LLM ping |
-| POST | `/v1/complete` | Chat completion with fallbacks |
+| POST | `/v1/complete` | Chat completion with task-based model routing |
+| POST | `/v1/vision` | Vision completion (palmistry, graphology) |
 
 ### POST `/v1/complete`
 
@@ -19,9 +20,14 @@ Keeps LLM keys and retry logic in one place so Telegram bots stay thin.
 {
   "system": "You are Zinaida...",
   "user": "Birth date 17.05.1994",
-  "max_tokens": 900
+  "max_tokens": 900,
+  "task": "numerology"
 }
 ```
+
+`task` selects the model chain: `tarot`, `runes`, `numerology`, `astrology`, `horoscope`, `palmistry`, `graphology`, `ping`.
+
+Override per task via env: `MODEL_TASK_TAROT=model1,model2` and `MODEL_VISION_TASK_PALMISTRY=vision1,vision2`.
 
 Response:
 

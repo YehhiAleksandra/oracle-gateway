@@ -12,28 +12,48 @@ type Config struct {
 	BaseURL                string
 	PrimaryModel           string
 	FallbackModels         []string
+	VisionModels           []string
+	TaskModels             map[string][]string
+	VisionTaskModels       map[string][]string
 	PerModelTimeoutSec     int
 	ReadingTimeoutSec      int
 	MaxBodyBytes           int64
 }
 
 func Load() Config {
+	defaults := ModelsFrom(
+		getenv("OPENAI_MODEL", "openai/gpt-oss-120b:free"),
+		splitCSV(getenv("OPENAI_MODEL_FALLBACKS", "poolside/laguna-xs.2:free,nex-agi/nex-n2-pro:free")),
+	)
+	if len(defaults) == 0 {
+		defaults = []string{"openai/gpt-oss-120b:free"}
+	}
+	visionDefaults := ModelsFrom(
+		getenv("OPENAI_VISION_MODEL", "google/gemma-3-12b-it:free"),
+		splitCSV(getenv("OPENAI_VISION_FALLBACKS", "google/gemma-4-26b-a4b-it:free")),
+	)
+	if len(visionDefaults) == 0 {
+		visionDefaults = append([]string(nil), defaults...)
+	}
 	return Config{
 		Addr:               getenv("GATEWAY_ADDR", ":8080"),
 		APIKey:             os.Getenv("OPENAI_API_KEY"),
 		BaseURL:            getenv("OPENAI_BASE_URL", "https://openrouter.ai/api/v1"),
-		PrimaryModel:       getenv("OPENAI_MODEL", "openai/gpt-oss-120b:free"),
-		FallbackModels:     splitCSV(getenv("OPENAI_MODEL_FALLBACKS", "poolside/laguna-xs.2:free,nex-agi/nex-n2-pro:free")),
+		PrimaryModel:       defaults[0],
+		FallbackModels:     defaults[1:],
+		VisionModels:       visionDefaults,
+		TaskModels:         loadTaskModels(defaults),
+		VisionTaskModels:   loadVisionTaskModels(visionDefaults),
 		PerModelTimeoutSec: getenvInt("LLM_PER_MODEL_TIMEOUT_SEC", 50),
 		ReadingTimeoutSec:  getenvInt("LLM_READING_TIMEOUT_SEC", 120),
 		MaxBodyBytes:       1 << 20,
 	}
 }
 
-func (c Config) Models() []string {
+func ModelsFrom(primary string, fallbacks []string) []string {
 	seen := map[string]struct{}{}
-	out := make([]string, 0, 1+len(c.FallbackModels))
-	for _, m := range append([]string{c.PrimaryModel}, c.FallbackModels...) {
+	out := make([]string, 0, 1+len(fallbacks))
+	for _, m := range append([]string{primary}, fallbacks...) {
 		m = strings.TrimSpace(m)
 		if m == "" {
 			continue
@@ -45,6 +65,10 @@ func (c Config) Models() []string {
 		out = append(out, m)
 	}
 	return out
+}
+
+func (c Config) Models() []string {
+	return ModelsFrom(c.PrimaryModel, c.FallbackModels)
 }
 
 func getenv(key, fallback string) string {
