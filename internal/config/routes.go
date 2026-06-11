@@ -15,6 +15,8 @@ const (
 	TaskAstrology   = "astrology"
 	TaskHoroscope   = "horoscope"
 	TaskCardOfDay   = "card_of_day"
+	TaskMatrix      = "matrix"
+	TaskSynastry    = "synastry"
 	TaskPing        = "ping"
 )
 
@@ -65,7 +67,8 @@ func loadTaskModels(defaults []string) map[string][]string {
 	}
 	for _, task := range []string{
 		TaskTarot, TaskRunes, TaskPalmistry, TaskGraphology,
-		TaskNumerology, TaskAstrology, TaskHoroscope, TaskCardOfDay, TaskPing,
+		TaskNumerology, TaskAstrology, TaskHoroscope, TaskCardOfDay,
+		TaskMatrix, TaskSynastry, TaskPing,
 	} {
 		if _, ok := out[task]; !ok {
 			out[task] = append([]string(nil), defaults...)
